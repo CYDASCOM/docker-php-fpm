@@ -1,59 +1,19 @@
 version: 2
 jobs:
-  build:
+  build-deploy:
     machine: true
     steps:
       - checkout
       - run:
-          name: Set convenience environment variables
+          name: Build and push images
           command: |
-            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
-            echo 'export FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_BRANCH}"' >> $BASH_ENV
-      - run:
-          name: Build image
-          command: docker build -t $FULL_IMAGE_NAME .
-      - run:
-          name: Save image to an archive
-          command: |
-            mkdir docker-image
-            docker save -o docker-image/image.tar $FULL_IMAGE_NAME
-      - persist_to_workspace:
-          root: .
-          paths:
-            - docker-image
-  deploy:
-    docker:
-      - image: circleci/python:2.7-jessie
-    environment:
-      AWS_DEFAULT_OUTPUT: json
-    steps:
-      - setup_remote_docker
-      - attach_workspace:
-          at: workspace
-      - run:
-          name: Install awscli
-          command: sudo pip install awscli
-      - run:
-          name: Load image
-          command: |
-            docker load --input workspace/docker-image/image.tar
-      - run:
-          name: Setup common environment variables
-          command: |
-            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
-      - run:
-          name: Push image to ECR
-          command: |
-            eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$CIRCLE_BRANCH
+            docker login --username $DOCKER_LOGIN --password $DOCKER_PASSWORD
+            bash build-push.sh
 workflows:
   version: 2
   build-deploy:
     jobs:
-      - build
-      - deploy:
-          requires:
-            - build
+      - build-deploy:
           filters:
             branches:
-              only: /^[0-9]+(\.[0-9]+)-alpine[0-9]+(\.[0-9]+)$/
+              only: master
