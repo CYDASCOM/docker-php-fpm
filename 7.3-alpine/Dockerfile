@@ -6,4 +6,6 @@ RUN apk upgrade --update \
    git \
    zlib-dev \
    libzip-dev \
-   && docker-php-ext-install pdo_mysql zip
+   && docker-php-ext-install pdo_mysql \
+   zip \
+   opcache
