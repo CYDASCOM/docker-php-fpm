@@ -5,6 +5,7 @@ set -e
 declare -a versions=(
   "7.2-stretch"
   "7.3-alpine"
+  "7.3-alpine3.11"
 )
 
 
